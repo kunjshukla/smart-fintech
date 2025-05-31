@@ -1,0 +1,7 @@
+langchain==0.2.0
+langchain-google-genai==1.0.3
+autogen>=0.3.0
+openai>=1.66.2
+python-dotenv==1.0.0
+pandas>=2.0.0
+google-cloud-aiplatform>=1.62.0
