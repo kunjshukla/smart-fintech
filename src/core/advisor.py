@@ -1,42 +1,60 @@
-import pandas as pd
-def run_financial_analysis(file_path=None, transactions=None, risk_profile="moderate"):
+from agents.budget_agent import create_budget_agent
+from agents.investment_agent import create_investment_agent
+from agents.fraud_agent import create_fraud_agent
+from agents.report_agent import create_report_agent
+
+
+def run_financial_analysis(transactions=None, income=0, expenses=0, risk_profile="moderate"):
     print(f"\n[DEBUG] Starting financial analysis with risk_profile: {risk_profile}")
+
     try:
-        # Initialize default values
-        budget_summary = "Default budget summary"
-        investment_advice = "Default investment advice"
-        fraud_alerts = "No fraud alerts"
-        report = "Financial report will be generated here"
+        # Initialize agents
+        budget_agent = create_budget_agent()
+        investment_agent = create_investment_agent()
+        fraud_agent = create_fraud_agent()
+        report_agent = create_report_agent()
 
-        # Process transactions if provided
+
+        def extract_content(response):
+            """Extract content from LLM response, handling different response types."""
+            if hasattr(response, 'content'):
+                return response.content
+            elif isinstance(response, dict) and 'content' in response:
+                return response['content']
+            return str(response)
+        
+        # Calculate total from transactions if provided
         if transactions:
-            print("[DEBUG] Processing provided transactions...")
-            try:
-                transactions_df = pd.DataFrame(transactions)
-                print(f"[DEBUG] Processed {len(transactions_df)} transactions")
-                budget_summary = f"Processed {len(transactions_df)} transactions"
-                
-                # Simple fraud detection based on amount
-                large_transactions = transactions_df[transactions_df['amount'].abs() > 900]
-                if not large_transactions.empty:
-                    flagged = large_transactions[['amount', 'description']].to_dict('records')
-                    fraud_alerts = "Potential issues found:\n" + "\n".join(
-                        f"- ${tx['amount']}: {tx['description']}" 
-                        for tx in flagged
-                    )
-                
-            except Exception as e:
-                print(f"[WARNING] Error processing transactions: {e}")
+            expenses = sum(tx.get('amount', 0) for tx in transactions)
+        
+        # Get budget advice
+        budget_summary = budget_agent.invoke({"income": income, "expenses": expenses})
+        
+        # Calculate savings
+        savings = income - expenses
+        investment_advice = investment_agent.invoke({"savings": savings, "risk_profile": risk_profile})
+        fraud_alerts = fraud_agent.invoke({"transactions":transactions})
+        report_response = report_agent.invoke({
+            "budget_advice": budget_summary,
+            "investment_advice": investment_advice,
+            "fraud_alert": fraud_alerts
+        })   
 
-        # Generate a simple report
-        report = f"""
-        Financial Analysis Report
-        ========================
-        Budget Summary: {budget_summary}
-        Risk Profile: {risk_profile}
-        Fraud Alerts: {fraud_alerts}
-        """
+        # Extract content if it's an AIMessage object
+        report = extract_content(report_response)
+        # Generate report
+        # report = f"""Financial Analysis Report
+        # ====================  
+        # Income: ${income}
+        # Expenses: ${expenses}
+        # Savings: ${savings}
 
+        #  Budget Summary:
+        # {budget_summary}
+
+        # Investment Advice:
+        # {investment_advice}"""
+        
         return {
             "budget_summary": budget_summary,
             "investment_advice": investment_advice,
@@ -45,7 +63,4 @@ def run_financial_analysis(file_path=None, transactions=None, risk_profile="mode
         }
 
     except Exception as e:
-        import traceback
-        error_msg = f"Error during analysis: {str(e)}\n{traceback.format_exc()}"
-        print(f"[ERROR] {error_msg}")
-        return {"error": error_msg}
+        return {"error": str(e)}

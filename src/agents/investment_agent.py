@@ -1,13 +1,13 @@
 from langchain.prompts import PromptTemplate
-from langchain_core.runnables import RunnableSequence
-from autogen import AssistantAgent
-from config.llm_config import get_llm, get_autogen_config
+from langchain.chains import LLMChain
+from config.llm_config import get_llm
 
 def create_investment_agent():
     prompt = PromptTemplate(
         input_variables=["savings", "risk_profile"],
-        template="Based on monthly savings of ${savings} and risk profile '{risk_profile}', recommend investment options in the format: 'Recommended investments: [Option 1, Option 2]'."
+        template="""Given ${savings} in savings and a {risk_profile} risk profile, 
+        recommend investment options. Format your response as a list starting with 'Recommended investments:'.
+        Include at least 3 options with brief descriptions.""",
     )
-    chain = RunnableSequence(prompt | get_llm())
-    agent = AssistantAgent(name="InvestmentAgent", llm_config=get_autogen_config())
-    return chain, agent
+    llm = get_llm()
+    return prompt | llm

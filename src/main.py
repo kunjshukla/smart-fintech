@@ -9,23 +9,22 @@ logging.getLogger('grpc').setLevel(logging.WARNING)
 from core.advisor import run_financial_analysis
 
 if __name__ == "__main__":
-    # Create a DataFrame from the transactions
-    transactions_df = pd.DataFrame([
-        {"amount": 500, "description": "Vendor A"},
-        {"amount": 1000, "description": "Vendor B (flagged)"}
-    ])
-    
-    # Run the analysis with the new function signature
     result = run_financial_analysis(
-        transactions=transactions_df.to_dict('records'),  # Convert DataFrame to list of dicts
+        income=5000,
+        expenses=3000,
         risk_profile="moderate"
     )
     
-    print("Backend Test Results:")
-    if "error" in result:
-        print(result["error"])
-    else:
-        print("Budget Advice:", result["budget_summary"])
-        print("Investment Advice:", result["investment_advice"])
-        print("Fraud Alerts:", result["fraud_alerts"])
-        print("\n" + result["financial_report"])
+if "error" in result:
+    print("Error:", result["error"])
+else:
+    print("\nFinancial Analysis Results:")
+    print("=" * 40)
+    print(result["financial_report"])
+    
+    # Print individual components if needed
+    print("\nDetailed Analysis:")
+    print("-" * 40)
+    print("Budget Summary:", result["budget_summary"])
+    print("\nInvestment Advice:", result["investment_advice"])
+    print("\nFraud Alerts:", result["fraud_alerts"])
